@@ -336,7 +336,7 @@ async function saveResult(result) {
 
   const { error } = await supabaseClient.from(SUPABASE_TABLE).insert(result);
   if (error) {
-    saveStatus.textContent = "Hasil tersimpan lokal, tetapi gagal dikirim ke Supabase.";
+    console.warn("Result saved locally only:", error.message);
     return;
   }
 
