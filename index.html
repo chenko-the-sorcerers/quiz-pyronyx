@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pyronyx Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="join-screen" class="screen is-active join-screen" aria-labelledby="join-title">
+        <div class="brand-panel">
+          <img class="brand-logo" src="assets/logo_pyronyx.png" alt="Pyronyx Academy" />
+          <div class="pulse-ring" aria-hidden="true"></div>
+        </div>
+
+        <form id="join-form" class="join-card">
+          <p class="eyebrow">Live quiz room</p>
+          <h1 id="join-title">Pyronyx Quiz</h1>
+          <p class="intro">
+            Masuk dengan nama peserta, jawab 10 soal Smart Nation 5.0, lalu lihat
+            ranking akhir setelah quiz selesai.
+          </p>
+          <label for="player-name">Nama peserta</label>
+          <div class="name-row">
+            <input
+              id="player-name"
+              name="player-name"
+              type="text"
+              maxlength="32"
+              placeholder="Tulis nama kamu"
+              autocomplete="name"
+              required
+            />
+            <button type="submit">Join</button>
+          </div>
+          <p id="join-error" class="form-note" role="alert"></p>
+        </form>
+      </section>
+
+      <section id="quiz-screen" class="screen quiz-screen" aria-labelledby="question-title">
+        <header class="quiz-header">
+          <img src="assets/logo_pyronyx.png" alt="Pyronyx Academy" />
+          <div class="player-chip">
+            <span id="player-avatar">P</span>
+            <strong id="player-label">Peserta</strong>
+          </div>
+        </header>
+
+        <div class="status-grid" aria-label="Status quiz">
+          <div>
+            <span>Soal</span>
+            <strong id="question-counter">1/10</strong>
+          </div>
+          <div>
+            <span>Skor</span>
+            <strong id="score-counter">0</strong>
+          </div>
+          <div>
+            <span>Waktu</span>
+            <strong id="timer-counter">60</strong>
+          </div>
+        </div>
+
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-bar"></div>
+        </div>
+
+        <article class="question-panel">
+          <p id="question-topic" class="eyebrow">Smart Nation 5.0</p>
+          <h2 id="question-title"></h2>
+          <div id="answer-list" class="answer-list"></div>
+        </article>
+
+        <footer class="quiz-footer">
+          <p id="feedback-text" aria-live="polite"></p>
+          <button id="next-button" type="button" disabled>Lanjut</button>
+        </footer>
+      </section>
+
+      <section id="result-screen" class="screen result-screen" aria-labelledby="result-title">
+        <div class="result-hero">
+          <img src="assets/logo_pyronyx.png" alt="Pyronyx Academy" />
+          <p class="eyebrow">Quiz complete</p>
+          <h2 id="result-title">Ranking Pyronyx Quiz</h2>
+          <p id="result-summary"></p>
+          <div class="result-actions">
+            <button id="reveal-button" type="button">Tampilkan Ranking</button>
+            <button id="restart-button" type="button" class="ghost-button">Main Lagi</button>
+          </div>
+          <p id="save-status" class="form-note"></p>
+        </div>
+
+        <div id="leaderboard" class="leaderboard" aria-live="polite">
+          <div id="podium" class="podium" aria-label="Top 3"></div>
+          <div id="rank-list" class="rank-list" aria-label="Ranking 4 sampai 10"></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
