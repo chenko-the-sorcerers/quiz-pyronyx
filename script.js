@@ -121,7 +121,6 @@ const answerList = document.querySelector("#answer-list");
 const feedbackText = document.querySelector("#feedback-text");
 const nextButton = document.querySelector("#next-button");
 const resultSummary = document.querySelector("#result-summary");
-const saveStatus = document.querySelector("#save-status");
 const revealButton = document.querySelector("#reveal-button");
 const restartButton = document.querySelector("#restart-button");
 const leaderboard = document.querySelector("#leaderboard");
@@ -329,19 +328,15 @@ async function saveResult(result) {
   localStorage.setItem("pyronyx_quiz_results", JSON.stringify(localResults));
 
   if (!supabaseClient) {
-    saveStatus.textContent =
-      "Mode lokal aktif. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di script.js agar hasil tersimpan ke Supabase.";
     return;
   }
 
   const { error } = await supabaseClient.from(SUPABASE_TABLE).insert(result);
   if (error) {
-    console.warn("Result saved locally only:", error.message);
     return;
   }
 
   state.resultSaved = true;
-  saveStatus.textContent = "Hasil berhasil tersimpan ke Supabase.";
 }
 
 async function renderLeaderboard() {
