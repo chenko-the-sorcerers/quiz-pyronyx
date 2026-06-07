@@ -75,18 +75,6 @@ const QUESTIONS = [
   },
 ];
 
-const SAMPLE_PLAYERS = [
-  { player_name: "Naya", score: 8420, correct_answers: 9, total_questions: 10, duration_seconds: 197 },
-  { player_name: "Rafi", score: 7860, correct_answers: 8, total_questions: 10, duration_seconds: 185 },
-  { player_name: "Alya", score: 7330, correct_answers: 8, total_questions: 10, duration_seconds: 209 },
-  { player_name: "Dimas", score: 6510, correct_answers: 7, total_questions: 10, duration_seconds: 221 },
-  { player_name: "Saskia", score: 6140, correct_answers: 7, total_questions: 10, duration_seconds: 239 },
-  { player_name: "Bima", score: 5520, correct_answers: 6, total_questions: 10, duration_seconds: 245 },
-  { player_name: "Kirana", score: 4970, correct_answers: 6, total_questions: 10, duration_seconds: 266 },
-  { player_name: "Arga", score: 4310, correct_answers: 5, total_questions: 10, duration_seconds: 272 },
-  { player_name: "Mika", score: 3880, correct_answers: 5, total_questions: 10, duration_seconds: 290 },
-];
-
 const QUESTION_SECONDS = 60;
 
 const state = {
@@ -373,7 +361,7 @@ async function renderLeaderboard() {
 }
 
 async function loadLeaderboard() {
-  let rows = [...getLocalResults(), ...SAMPLE_PLAYERS];
+  let rows = getLocalResults();
 
   if (supabaseClient) {
     const { data, error } = await supabaseClient
