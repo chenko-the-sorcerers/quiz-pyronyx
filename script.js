@@ -1,6 +1,10 @@
 const SUPABASE_URL = "https://hmpiffdsavbepuzuesnd.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_sCp9xCJmD4JofsqcB-W08Q_BeZ81nrX";
 const SUPABASE_TABLE = "quiz_results";
+const ATTEMPT_TABLE = "quiz_attempts";
+const DEVICE_ID_KEY = "pyronyx_quiz_device_id";
+const ATTEMPT_LOCK_KEY = "pyronyx_quiz_attempt_lock";
+const IP_LOOKUP_URL = "https://api.ipify.org?format=json";
 
 const QUESTIONS = [
   {
@@ -80,6 +84,7 @@ const QUESTION_SECONDS = 60;
 const state = {
   playerName: "",
   questions: [],
+  attempt: null,
   currentQuestion: 0,
   score: 0,
   correctAnswers: 0,
@@ -102,6 +107,7 @@ const screens = {
 };
 
 const joinForm = document.querySelector("#join-form");
+const joinButton = joinForm.querySelector("button[type='submit']");
 const joinError = document.querySelector("#join-error");
 const playerNameInput = document.querySelector("#player-name");
 const playerLabel = document.querySelector("#player-label");
@@ -122,7 +128,9 @@ const leaderboard = document.querySelector("#leaderboard");
 const podium = document.querySelector("#podium");
 const rankList = document.querySelector("#rank-list");
 
-joinForm.addEventListener("submit", (event) => {
+showAttemptLockMessage();
+
+joinForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = playerNameInput.value.trim();
 
@@ -131,8 +139,22 @@ joinForm.addEventListener("submit", (event) => {
     return;
   }
 
+  joinButton.disabled = true;
+  joinButton.textContent = "Cek...";
+  joinError.textContent = "Memeriksa akses peserta...";
+
+  const gate = await registerAttempt(name);
+
+  if (!gate.allowed) {
+    joinError.textContent = gate.message;
+    joinButton.textContent = "Join";
+    joinButton.disabled = Boolean(getAttemptLock());
+    return;
+  }
+
   joinError.textContent = "";
-  startQuiz(name);
+  joinButton.textContent = "Join";
+  startQuiz(name, gate.attempt);
 });
 
 nextButton.addEventListener("click", () => {
@@ -158,6 +180,7 @@ restartButton.addEventListener("click", () => {
   rankList.innerHTML = "";
   playerNameInput.value = "";
   showScreen("join");
+  showAttemptLockMessage();
   playerNameInput.focus();
 });
 
@@ -166,10 +189,11 @@ function showScreen(screenName) {
   screens[screenName].classList.add("is-active");
 }
 
-function startQuiz(name) {
+function startQuiz(name, attempt) {
   resetState();
   state.playerName = name;
   state.questions = createQuizQuestions();
+  state.attempt = attempt;
   state.startedAt = Date.now();
   playerLabel.textContent = name;
   playerAvatar.textContent = name.charAt(0).toUpperCase();
@@ -181,6 +205,7 @@ function resetState() {
   window.clearInterval(state.timerId);
   state.playerName = "";
   state.questions = [];
+  state.attempt = null;
   state.currentQuestion = 0;
   state.score = 0;
   state.correctAnswers = 0;
@@ -285,6 +310,9 @@ async function finishQuiz() {
     correct_answers: state.correctAnswers,
     total_questions: state.questions.length,
     duration_seconds: durationSeconds,
+    device_id: state.attempt?.device_id || getDeviceId(),
+    ip_address: state.attempt?.ip_address || null,
+    user_agent: getUserAgent(),
   };
 
   showScreen("result");
@@ -384,6 +412,109 @@ function getLocalResults() {
     return JSON.parse(localStorage.getItem("pyronyx_quiz_results")) || [];
   } catch {
     return [];
+  }
+}
+
+async function registerAttempt(playerName) {
+  const lockedAttempt = getAttemptLock();
+
+  if (lockedAttempt) {
+    return {
+      allowed: false,
+      message: "Perangkat ini sudah pernah masuk quiz. Satu peserta hanya bisa join satu kali.",
+    };
+  }
+
+  const attempt = {
+    player_name: playerName,
+    device_id: getDeviceId(),
+    ip_address: await getPublicIp(),
+    user_agent: getUserAgent(),
+  };
+
+  setAttemptLock(attempt);
+
+  if (!supabaseClient) {
+    return { allowed: true, attempt };
+  }
+
+  const { error } = await supabaseClient.from(ATTEMPT_TABLE).insert(attempt);
+
+  if (error?.code === "23505") {
+    return {
+      allowed: false,
+      message: "Perangkat ini sudah terdaftar. Kamu tidak bisa join quiz lebih dari satu kali.",
+    };
+  }
+
+  if (error) {
+    console.warn("Attempt saved locally only:", error.message);
+  }
+
+  return { allowed: true, attempt };
+}
+
+async function getPublicIp() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 3500);
+    const response = await fetch(IP_LOOKUP_URL, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    window.clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return typeof data.ip === "string" ? data.ip : null;
+  } catch {
+    return null;
+  }
+}
+
+function getDeviceId() {
+  const existingId = localStorage.getItem(DEVICE_ID_KEY);
+
+  if (existingId) {
+    return existingId;
+  }
+
+  const newId = crypto.randomUUID();
+  localStorage.setItem(DEVICE_ID_KEY, newId);
+  return newId;
+}
+
+function getUserAgent() {
+  return navigator.userAgent.slice(0, 255);
+}
+
+function getAttemptLock() {
+  try {
+    return JSON.parse(localStorage.getItem(ATTEMPT_LOCK_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function setAttemptLock(attempt) {
+  localStorage.setItem(
+    ATTEMPT_LOCK_KEY,
+    JSON.stringify({
+      player_name: attempt.player_name,
+      device_id: attempt.device_id,
+      ip_address: attempt.ip_address,
+      started_at: new Date().toISOString(),
+    }),
+  );
+}
+
+function showAttemptLockMessage() {
+  if (getAttemptLock()) {
+    joinError.textContent = "Perangkat ini sudah pernah masuk quiz. Satu peserta hanya bisa join satu kali.";
+    joinButton.disabled = true;
   }
 }
 
